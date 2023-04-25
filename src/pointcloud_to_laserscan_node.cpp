@@ -75,8 +75,7 @@ PointCloudToLaserScanNode::PointCloudToLaserScanNode(const rclcpp::NodeOptions &
   inf_epsilon_ = this->declare_parameter("inf_epsilon", 1.0);
   use_inf_ = this->declare_parameter("use_inf", true);
 
-  bool always_subscribe = true;
-  always_subscribe = this->declare_parameter("always_subscribe", always_subscribe);
+  always_subscribe_ = this->declare_parameter("always_subscribe", false);
 
   pub_ = this->create_publisher<sensor_msgs::msg::LaserScan>("scan", rclcpp::SensorDataQoS());
 
@@ -98,7 +97,7 @@ PointCloudToLaserScanNode::PointCloudToLaserScanNode(const rclcpp::NodeOptions &
     sub_.registerCallback(std::bind(&PointCloudToLaserScanNode::cloudCallback, this, _1));
   }
 
-  if (always_subscribe) {
+  if (always_subscribe_) {
     rclcpp::SensorDataQoS qos;
     qos.keep_last(input_queue_size_);
     sub_.subscribe(this, "cloud_in", qos.get_rmw_qos_profile());
@@ -111,7 +110,7 @@ PointCloudToLaserScanNode::PointCloudToLaserScanNode(const rclcpp::NodeOptions &
 PointCloudToLaserScanNode::~PointCloudToLaserScanNode()
 {
   alive_.store(false);
-  subscription_listener_thread_.join();
+  if (!always_subscribe_) subscription_listener_thread_.join();
 }
 
 void PointCloudToLaserScanNode::subscriptionListenerThreadLoop()
